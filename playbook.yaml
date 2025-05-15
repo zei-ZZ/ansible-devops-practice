@@ -5,26 +5,48 @@
   become: true
 
   tasks:
-    - name: Update apt cache
+    - name: Install aptitude
       apt:
-        update_cache: yes
+        name: aptitude
+        state: latest
+        update_cache: true
 
-    - name: Installer Docker
+    - name: Install required system packages
       apt:
-        name: docker.io
-        state: present
-        tags: docker
-
-    - name: Ensure Docker service is running
-      service:
-        name: docker
-        state: started
-        enabled: yes
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
 
     - name: Pull Nginx Docker image
       docker_image:
         name: nginx:latest
         source: pull
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
 
     - name: Start Nginx Docker container
       docker_container:

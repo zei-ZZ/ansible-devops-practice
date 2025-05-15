@@ -1,18 +1,23 @@
-- name: Install Docker and run NGINX container
-  hosts: azure_vm
+---
+# playbook.yml - Deploy Nginx Docker container
+- name: Deploy Nginx Docker container
+  hosts: web
   become: true
 
   tasks:
-    - name: Update apt and install dependencies
+    - name: Update apt cache
       apt:
-        name: "{{ item }}"
-        state: present
         update_cache: yes
-      loop:
-        - apt-transport-https
-        - ca-certificates
-        - curl
-        - software-properties-common
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - gnupg
+        state: present
 
     - name: Add Docker GPG key
       apt_key:
@@ -21,30 +26,34 @@
 
     - name: Add Docker repository
       apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
         state: present
 
     - name: Install Docker
       apt:
         name: docker-ce
-        state: latest
-        update_cache: yes
+        state: present
 
-    - name: Ensure Docker is started
+    - name: Ensure Docker service is running
       service:
         name: docker
         state: started
-        enabled: true
+        enabled: yes
 
-    - name: Pull NGINX image
+    - name: Install Python Docker module
+      pip:
+        name: docker
+        state: present
+
+    - name: Pull Nginx Docker image
       docker_image:
-        name: nginx
+        name: nginx:latest
         source: pull
 
-    - name: Run NGINX container
+    - name: Start Nginx Docker container
       docker_container:
-        name: nginx
-        image: nginx
+        name: nginx-app
+        image: nginx:latest
         state: started
         restart_policy: always
         ports:

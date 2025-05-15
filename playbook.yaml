@@ -24,9 +24,15 @@
         state: latest
         update_cache: true
 
-    - name: Add Docker GPG apt Key
-      apt_key:
+    - name: Download Docker GPG key
+      get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /usr/share/keyrings/docker-archive-keyring.gpg
+        mode: "0644"
+
+    - name: Add Docker GPG key
+      apt_key:
+        file: /usr/share/keyrings/docker-archive-keyring.gpg
         state: present
 
     - name: Add Docker Repository

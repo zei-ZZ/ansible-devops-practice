@@ -7,29 +7,47 @@ pipeline {
                 git 'https://github.com/zei-ZZ/ansible-devops-practice.git'
             }
         }
-        stage('Check docker containers before deployment') {
+        // stage('Generate SSH Keys') {
+        //   steps {
+        //     sh '''
+        //       mkdir -p ~/.ssh
+        //       ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+        //     '''
+        //   }
+        // }
+
+        stage('Terraform Init') {
             steps {
-                sh 'docker ps'
-            }
-        }
-        stage('Terraform') {
-            steps {
-                sh 'terraform init'
-                sh 'terraform apply -auto-approve'
-            }
-        }
-        stage('Check correct deployment')
-        {
-            steps {
-                sh 'docker ps -f name=nginx-test'
+                withCredentials([azureServicePrincipal(
+                    credentialsId: 'azure-credentials',
+                    subscriptionIdVariable: 'ARM_SUBSCRIPTION_ID',
+                    clientIdVariable: 'ARM_CLIENT_ID',
+                    clientSecretVariable: 'ARM_CLIENT_SECRET',
+                    tenantIdVariable: 'ARM_TENANT_ID'
+                )]) {
+                    sh 'terraform init'
+                }
             }
         }
 
-        stage('Clean')
-        {
+        stage('Terraform Apply') {
             steps {
-                sh 'terraform destroy -auto-approve'
+                withCredentials([azureServicePrincipal(
+                    credentialsId: 'azure-credentials',
+                    subscriptionIdVariable: 'ARM_SUBSCRIPTION_ID',
+                    clientIdVariable: 'ARM_CLIENT_ID',
+                    clientSecretVariable: 'ARM_CLIENT_SECRET',
+                    tenantIdVariable: 'ARM_TENANT_ID'
+                )]) {
+                    sh 'terraform apply -auto-approve -var "client_id=$ARM_CLIENT_ID" -var "client_secret=$ARM_CLIENT_SECRET" -var "subscription_id=$ARM_SUBSCRIPTION_ID" -var "tenant_id=$ARM_TENANT_ID"'
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 }

@@ -24,10 +24,6 @@
         state: latest
         update_cache: true
 
-    - name: Pull Nginx Docker image
-      docker_image:
-        name: nginx:latest
-        source: pull
     - name: Add Docker GPG apt Key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
@@ -47,6 +43,11 @@
     - name: Install Docker Module for Python
       pip:
         name: docker
+
+    - name: Pull Nginx Docker image
+      docker_image:
+        name: nginx:latest
+        source: pull
 
     - name: Start Nginx Docker container
       docker_container:
